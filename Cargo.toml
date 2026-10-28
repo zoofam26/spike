@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/spike-core",
+    "crates/spike-stream",
+    "crates/spike-engine",
+    "crates/spike-app",
+]
+default-members = [
+    "crates/spike-core",
+    "crates/spike-stream",
+    "crates/spike-engine",
+    "crates/spike-app",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/zoofam26/spike"
+authors = ["Spike Contributors"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

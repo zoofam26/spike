@@ -1,0 +1,22 @@
+[package]
+name = "spike-app"
+description = "Spike — live event sports streaming app (Slint UI + Rust engine)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+default-run = "spike"
+
+[[bin]]
+name = "spike"
+path = "src/main.rs"
+
+[dependencies]
+spike-core = { path = "../spike-core" }
+spike-stream = { path = "../spike-stream" }
+spike-engine = { path = "../spike-engine" }
+slint = "1.8"
+ureq = { version = "2", default-features = true }
+
+[build-dependencies]
+slint-build = "1.8"

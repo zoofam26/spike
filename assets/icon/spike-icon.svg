@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Spike logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#171a20"/>
+      <stop offset="1" stop-color="#0c0e12"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d7ff5e"/>
+      <stop offset="1" stop-color="#7ed321"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- squircle background -->
+  <rect x="32" y="32" width="960" height="960" rx="224" ry="224" fill="url(#bg)"/>
+  <rect x="32" y="32" width="960" height="960" rx="224" ry="224" fill="none" stroke="#2a2f3a" stroke-width="6" opacity="0.6"/>
+
+  <!-- S-spike glyph: single continuous stroke ending in a sharp spike -->
+  <g filter="url(#glow)">
+    <path d="M 690 268
+             L 430 268
+             C 330 268 330 420 430 420
+             L 594 420
+             C 694 420 694 572 594 572
+             L 470 572"
+          fill="none" stroke="url(#bolt)" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 470 572 L 610 572 L 388 792 L 452 572 Z"
+          fill="url(#bolt)" stroke="url(#bolt)" stroke-width="24" stroke-linejoin="round"/>
+  </g>
+</svg>

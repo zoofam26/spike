@@ -1,0 +1,9 @@
+[package]
+name = "spike-core"
+description = "Domain models, M3U playlist and XMLTV guide parsing for Spike"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]

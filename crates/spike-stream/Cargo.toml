@@ -1,0 +1,10 @@
+[package]
+name = "spike-stream"
+description = "HLS parsing, sliding-window buffering, adaptive scheduler and local re-serve server for Spike"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+spike-core = { path = "../spike-core" }

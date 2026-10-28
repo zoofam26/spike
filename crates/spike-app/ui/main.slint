@@ -1,0 +1,318 @@
+import { ListView, Button } from "std-widgets.slint";
+
+// Spike design language: charcoal broadcast-dark surfaces, a single volt
+// accent, dense event rows — tuned for scanning many live events fast.
+
+export struct EventRowData {
+    title: string,
+    group: string,
+    kind: string,
+    live: bool,
+}
+
+component BufferChip inherits Rectangle {
+    in property <string> label;
+    in property <float> level; // 0..1
+
+    width: 186px;
+    height: 26px;
+    border-radius: 13px;
+    background: #131a26;
+    border-width: 1px;
+    border-color: #232d40;
+
+    Rectangle {
+        x: 10px;
+        y: 9px;
+        width: 8px;
+        height: 8px;
+        border-radius: 4px;
+        background: root.level >= 0.66 ? #b6f542 : (root.level >= 0.25 ? #f5b942 : #f5425c);
+    }
+    Text {
+        x: 26px;
+        y: 0;
+        height: 26px;
+        vertical-alignment: center;
+        text: root.label;
+        color: #cfd6e4;
+        font-size: 11px;
+    }
+    Rectangle {
+        x: 132px;
+        y: 11px;
+        width: 42px;
+        height: 4px;
+        border-radius: 2px;
+        background: #232d40;
+        Rectangle {
+            x: 0;
+            y: 0;
+            height: 4px;
+            border-radius: 2px;
+            width: parent.width * min(max(root.level, 0.0), 1.0);
+            background: #b6f542;
+        }
+    }
+}
+
+component EventRow inherits Rectangle {
+    in property <EventRowData> data;
+    in property <int> index;
+    in property <bool> selected;
+    callback activated(int);
+
+    height: 60px;
+    background: root.selected ? #18202e : transparent;
+    animate background { duration: 120ms; }
+
+    TouchArea {
+        clicked => { root.activated(root.index); }
+    }
+
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+
+        VerticalLayout {
+            alignment: center;
+            width: 44px;
+            Rectangle {
+                height: 24px;
+                border-radius: 6px;
+                background: #1a2230;
+                border-width: 1px;
+                border-color: #243048;
+                Text {
+                    width: parent.width;
+                    text: root.data.kind;
+                    color: #b6f542;
+                    font-size: 8px;
+                    letter-spacing: 1px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            Text {
+                text: root.data.title;
+                color: #e8ecf1;
+                font-size: 14px;
+                font-weight: 600;
+                overflow: elide;
+            }
+            Text {
+                text: root.data.group;
+                color: #8a93a6;
+                font-size: 11px;
+                overflow: elide;
+            }
+        }
+
+        Rectangle {
+            width: 48px;
+            VerticalLayout {
+                alignment: center;
+                if root.data.live: Rectangle {
+                    height: 18px;
+                    border-radius: 4px;
+                    background: #b6f5421f;
+                    Text {
+                        width: parent.width;
+                        text: "LIVE";
+                        color: #b6f542;
+                        font-size: 9px;
+                        font-weight: 800;
+                        letter-spacing: 1px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component SpikeWindow inherits Window {
+    title: "Spike";
+    preferred-width: 1180px;
+    preferred-height: 760px;
+    min-width: 520px;
+    min-height: 420px;
+    background: #0d1017;
+
+    in property <[EventRowData]> events;
+    in property <[string]> groups;
+    in property <string> status-text: "Ready";
+    in property <string> buffered-label: "—";
+    in property <float> buffer-level: 0.0;
+    in property <int> selected-index: -1;
+    in property <string> now-playing: "Nothing playing";
+    callback open-event(int);
+    callback stop-playback();
+
+    HorizontalLayout {
+        // ---- Left rail ----
+        Rectangle {
+            width: 232px;
+            background: #10141c;
+
+            VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: start;
+                    Rectangle {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 10px;
+                        background: #b6f542;
+                        Text {
+                            width: parent.width;
+                            height: parent.height;
+                            text: "S";
+                            color: #0d1017;
+                            font-size: 24px;
+                            font-weight: 800;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text { text: "SPIKE"; color: #e8ecf1; font-size: 17px; font-weight: 800; letter-spacing: 3px; }
+                        Text { text: "live event sports"; color: #8a93a6; font-size: 10px; }
+                    }
+                }
+
+                Rectangle { height: 1px; background: #1c2230; }
+
+                Text { text: "CATEGORIES"; color: #8a93a6; font-size: 11px; letter-spacing: 1px; }
+
+                ListView {
+                    for group in root.groups: Rectangle {
+                        height: 32px;
+                        border-radius: 6px;
+                        background: transparent;
+                        Text {
+                            x: 10px;
+                            text: group;
+                            color: #aab3c5;
+                            font-size: 12px;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                    }
+                }
+
+                Rectangle { height: 1px; background: #1c2230; }
+
+                Text {
+                    text: root.status-text;
+                    color: #6d7789;
+                    font-size: 11px;
+                    wrap: word-wrap;
+                }
+            }
+        }
+
+        // ---- Main column ----
+        VerticalLayout {
+            spacing: 0px;
+
+            // Top bar
+            Rectangle {
+                height: 56px;
+                background: #0f131b;
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    spacing: 12px;
+
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: "LIVE EVENTS";
+                            color: #e8ecf1;
+                            font-size: 15px;
+                            font-weight: 700;
+                            letter-spacing: 2px;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Rectangle {
+                        min-width: 0;
+                        horizontal-stretch: 1;
+                        background: transparent;
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        BufferChip { label: root.buffered-label; level: root.buffer-level; }
+                    }
+                }
+            }
+
+            Rectangle { height: 1px; background: #1c2230; }
+
+            // Event list
+            Rectangle {
+                horizontal-stretch: 1;
+                background: #0d1017;
+                ListView {
+                    x: 0;
+                    y: 0;
+                    width: parent.width;
+                    height: parent.height;
+                    for event[index] in root.events: EventRow {
+                        width: parent.width;
+                        data: event;
+                        index: index;
+                        selected: index == root.selected-index;
+                        activated(i) => { root.open-event(i); }
+                    }
+                }
+            }
+
+            Rectangle { height: 1px; background: #1c2230; }
+
+            // Now playing bar
+            Rectangle {
+                height: 64px;
+                background: #10141c;
+                HorizontalLayout {
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    spacing: 12px;
+
+                    VerticalLayout {
+                        width: 28px;
+                        alignment: center;
+                        Rectangle {
+                            width: 12px;
+                            height: 12px;
+                            border-radius: 2px;
+                            background: #b6f542;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        horizontal-stretch: 1;
+                        Text { text: "NOW PLAYING"; color: #8a93a6; font-size: 10px; letter-spacing: 1px; }
+                        Text { text: root.now-playing; color: #e8ecf1; font-size: 14px; font-weight: 600; overflow: elide; }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Button { text: "Stop"; clicked => { root.stop-playback(); } }
+                    }
+                }
+            }
+        }
+    }
+}
