@@ -11,25 +11,32 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::cell::RefCell;
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "gui")]
 use slint::{ModelRc, VecModel};
 use spike_core::{m3u, MediaKind, Playlist, PlaylistItem};
+#[cfg(feature = "gui")]
 use spike_engine::create_backend;
-use spike_stream::buffer::{BufferState, SegmentBuffer};
+#[cfg(feature = "gui")]
+use spike_stream::buffer::BufferState;
+use spike_stream::buffer::SegmentBuffer;
 use spike_stream::error::StreamError;
 use spike_stream::scheduler::{
     Scheduler, SchedulerConfig, SchedulerStats, SegmentFetcher, StdClock,
 };
 use spike_stream::server::LocalStreamServer;
+#[cfg(feature = "gui")]
+use std::cell::RefCell;
+#[cfg(feature = "gui")]
+use std::rc::Rc;
 
+#[cfg(feature = "gui")]
 slint::include_modules!();
 
 const USAGE: &str = "\
@@ -145,6 +152,7 @@ fn default_sample_path() -> PathBuf {
 }
 
 /// Pure projection of playlist items into UI rows (unit-testable).
+#[cfg(any(feature = "gui", test))]
 fn event_rows(playlist: &Playlist) -> Vec<(String, String, String, bool)> {
     playlist
         .items
@@ -214,6 +222,7 @@ fn start_pipeline(item: &PlaylistItem) -> Result<StartedPipeline, String> {
     })
 }
 
+#[cfg(feature = "gui")]
 fn buffer_state_label(state: BufferState) -> &'static str {
     match state {
         BufferState::Empty => "ended",
@@ -275,6 +284,7 @@ fn run_headless(playlist: &Playlist, args: &Args) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+#[cfg(feature = "gui")]
 fn run_ui(playlist: &Playlist, _args: &Args) -> Result<(), String> {
     let ui = SpikeWindow::new().map_err(|err| format!("cannot create UI: {err}"))?;
 
@@ -423,12 +433,22 @@ fn main() -> ExitCode {
         return run_headless(&playlist, &args);
     }
 
-    match run_ui(&playlist, &args) {
+    #[cfg(feature = "gui")]
+    return match run_ui(&playlist, &args) {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("error: {err}");
             ExitCode::FAILURE
         }
+    };
+
+    #[cfg(not(feature = "gui"))]
+    {
+        eprintln!(
+            "this build has no GUI (compiled without the `gui` feature); \
+             run with --headless instead"
+        );
+        return ExitCode::FAILURE;
     }
 }
 
@@ -513,8 +533,13 @@ https://cdn.example/b.ts
         let path = default_sample_path();
         let text = std::fs::read_to_string(&path).expect("sample playlist readable");
         let playlist = m3u::parse(&text, None).expect("parse");
-        assert!(!playlist.items.is_empty());
-        assert!(playlist.groups.contains(&"Space & Exploration".to_string()));
+        assert_eq!(
+            playlist.items.len(),
+            3,
+            "sample ships three verified channels"
+        );
+        assert!(playlist.groups.contains(&"Action Sports".to_string()));
+        assert!(playlist.groups.contains(&"News".to_string()));
         assert!(playlist
             .items
             .iter()

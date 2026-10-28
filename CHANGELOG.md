@@ -22,10 +22,16 @@ First public skeleton. Everything below is implemented and tested (46 tests).
 - `spike-app`: Slint UI (charcoal/volt broadcast design, event list, category rail,
   live buffer chip, now-playing bar); CLI (`--playlist/--url/--headless/--play/
   --duration/--backend`); HTTPS fetching via ureq/rustls; real buffer telemetry into
-  the UI.
+  the UI; `gui` feature gate so headless cross builds (musl ARM64, Android NDK)
+  compile without the windowing stack.
 - Brand assets: original volt S-spike icon (SVG source + 1024 px PNG).
-- Documentation: README, ARCHITECTURE deep-dive, LEGAL acceptable-use policy.
-- CI: fmt + clippy `-D warnings` + full test matrix on every push/PR.
+- Documentation: README, ARCHITECTURE deep-dive, LEGAL acceptable-use policy,
+  CONTRIBUTING.
+- CI: fmt + clippy `-D warnings` + full test matrix on every push/PR, on Linux and
+  Windows runners, plus a headless build gate.
+- Release pipeline: pushing a `v*` tag builds Linux x64 (GUI), Linux ARM64 (static
+  headless), Windows x64 (GUI) and Android ARM64 (headless) artifacts and publishes
+  them to GitHub Releases with SHA256 checksums.
 
 ### Verified
 - `cargo test --workspace`: 46/46 green.

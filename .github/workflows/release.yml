@@ -1,0 +1,159 @@
+name: Release
+
+# Builds release binaries for every supported platform whenever a `v*` tag
+# is pushed, then attaches them to a GitHub Release. Can also be dispatched
+# manually to smoke-test the build matrix (publishing is skipped then).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x64
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            archive: tar
+
+          - label: linux-arm64-headless
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-musl
+            archive: tar
+            cross: true
+
+          - label: windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+
+          - label: android-arm64-headless
+            os: ubuntu-22.04
+            target: aarch64-linux-android
+            archive: tar
+            ndk: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # ---------- toolchain extras per target ----------
+
+      - name: Install cross (musl cross-compilation)
+        if: ${{ matrix.cross }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: Set up Android NDK
+        if: ${{ matrix.ndk }}
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: true
+
+      - name: Install cargo-ndk
+        if: ${{ matrix.ndk }}
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+
+      # ---------- build ----------
+
+      - name: Build (host target, GUI)
+        if: ${{ !matrix.cross && !matrix.ndk }}
+        run: cargo build --release --target ${{ matrix.target }} -p spike-app
+
+      - name: Build (cross, headless)
+        if: ${{ matrix.cross }}
+        run: cross build --release --target ${{ matrix.target }} -p spike-app --no-default-features
+
+      - name: Build (Android NDK, headless)
+        if: ${{ matrix.ndk }}
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: cargo ndk --target arm64-v8a --platform 24 build --release -p spike-app --no-default-features
+
+      # ---------- package ----------
+
+      - name: Package (tar.gz)
+        if: ${{ matrix.archive == 'tar' }}
+        run: |
+          NAME="spike-${GITHUB_REF_NAME}-${{ matrix.label }}"
+          mkdir -p "dist/${NAME}"
+          cp "target/${{ matrix.target }}/release/spike" "dist/${NAME}/spike"
+          chmod +x "dist/${NAME}/spike"
+          cp README.md LICENSE CHANGELOG.md LEGAL.md "dist/${NAME}/"
+          cp -r assets "dist/${NAME}/assets"
+          tar -czf "dist/${NAME}.tar.gz" -C dist "${NAME}"
+          rm -rf "dist/${NAME}"
+
+      - name: Package (zip)
+        if: ${{ matrix.archive == 'zip' }}
+        shell: pwsh
+        run: |
+          $name = "spike-${env:GITHUB_REF_NAME}-${{ matrix.label }}"
+          New-Item -ItemType Directory -Path "dist/$name" -Force | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/spike.exe" "dist/$name/spike.exe"
+          Copy-Item README.md, LICENSE, CHANGELOG.md, LEGAL.md "dist/$name/"
+          Copy-Item assets -Recurse -Destination "dist/$name/assets"
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
+          Remove-Item -Recurse -Force "dist/$name"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.label }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz *.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Spike ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS.txt

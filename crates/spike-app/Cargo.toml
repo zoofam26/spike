@@ -11,11 +11,18 @@ default-run = "spike"
 name = "spike"
 path = "src/main.rs"
 
+[features]
+# `gui` compiles the Slint window and links the rendering stack.
+# Headless builds (`--no-default-features`) are used for cross targets
+# (aarch64 musl, Android NDK) where a windowing stack is unavailable.
+default = ["gui"]
+gui = ["dep:slint"]
+
 [dependencies]
 spike-core = { path = "../spike-core" }
 spike-stream = { path = "../spike-stream" }
 spike-engine = { path = "../spike-engine" }
-slint = "1.8"
+slint = { version = "1.8", optional = true }
 ureq = { version = "2", default-features = true }
 
 [build-dependencies]

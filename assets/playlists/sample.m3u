@@ -4,15 +4,20 @@
 # IPTV provider's playlist, streams from rights-holders, or official free
 # channels like the ones below). See LEGAL.md in the repository root.
 #
-# The entries below are official, freely offered public channels used to
-# demonstrate the pipeline end-to-end. Red Bull TV is listed first because
-# its CDN serves a clean live window; some NASA mirrors intermittently
-# serve stale variant lists.
+# Every entry below is an official, freely offered 24/7 channel and was
+# verified end-to-end through the Spike buffer pipeline before shipping.
+#
+# NASA TV is currently commented out: its Akamai edge (ntv1/ntv2.akamaized.net)
+# publishes master playlists whose variant playlists return HTTP 404 — a stale
+# upstream, not a Spike bug. Re-add it once NASA's CDN recovers:
+#
+#   #EXTINF:-1 tvg-id="nasa.tv" group-title="Space & Exploration",NASA TV Public
+#   https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
 
 #EXTM3U
 #EXTINF:-1 tvg-id="redbull.tv" group-title="Action Sports",Red Bull TV
 https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8
-#EXTINF:-1 tvg-id="nasa.tv" group-title="Space & Exploration",NASA TV Public
-https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
-#EXTINF:-1 tvg-id="nasa.media" group-title="Space & Exploration",NASA TV Media
-https://ntv2.akamaized.net/hls/live/2013923/NASA-NTV2-HLS/master.m3u8
+#EXTINF:-1 tvg-id="dw.en" group-title="News",DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
+#EXTINF:-1 tvg-id="aljazeera.ar" group-title="News",Al Jazeera Arabic
+https://live-hls-web-aja.getaj.net/AJA/index.m3u8

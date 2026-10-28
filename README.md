@@ -8,6 +8,9 @@
 
 Buffer-first HLS playback · Slint UI · Linux / Windows / Android
 
+[![CI](https://github.com/zoofam26/spike/actions/workflows/ci.yml/badge.svg)](https://github.com/zoofam26/spike/actions/workflows/ci.yml)
+[![Release](https://github.com/zoofam26/spike/actions/workflows/release.yml/badge.svg)](https://github.com/zoofam26/spike/releases)
+
 </div>
 
 ---
@@ -52,13 +55,30 @@ spike/
 ├── assets/
 │   ├── icon/           brand SVG + app icon PNG
 │   └── playlists/      sample playlist with official free channels
-├── .github/workflows/  CI (fmt, clippy, tests)
+├── .github/workflows/  CI (fmt, clippy, tests) + Release (multi-platform artifacts)
 ├── ARCHITECTURE.md     engine deep-dive
 ├── LEGAL.md            acceptable use
+├── CONTRIBUTING.md
 └── CHANGELOG.md
 ```
 
-## Quick start
+## Install (prebuilt binaries)
+
+Every tagged version is built automatically by CI and attached to the
+[GitHub Releases](https://github.com/zoofam26/spike/releases) page, with SHA256
+checksums:
+
+| Artifact | Contents |
+|----------|----------|
+| `spike-vX.Y.Z-linux-x64.tar.gz` | GUI build (X11/Wayland) + docs + sample playlist |
+| `spike-vX.Y.Z-linux-arm64-headless.tar.gz` | Static headless engine (musl, runs anywhere incl. Termux) |
+| `spike-vX.Y.Z-windows-x64.zip` | GUI build (`spike.exe`) + docs + sample playlist |
+| `spike-vX.Y.Z-android-arm64-headless.tar.gz` | Android (API 24+) headless engine binary |
+
+Extract and run — no installer, no runtime dependencies beyond a system player
+(`mpv`/`ffplay`/`vlc`) for video output on desktop.
+
+## Quick start (from source)
 
 Prerequisites: [Rust 1.75+](https://rustup.rs) (stable), plus a system player
 (`mpv`, `ffplay`, or `vlc`) for actual video windows.
@@ -88,24 +108,31 @@ Point any player at the printed URL to watch the buffered stream.
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Linux (X11/Wayland) | ✅ primary target | tested in CI; needs OpenGL or software rendering |
-| Windows 10/11 | ✅ supported | same build; external backend finds mpv/ffplay or uses `start` |
-| Android | 🔧 experimental | Slint supports Android via `android-activity`; see below |
+| Linux (X11/Wayland) | ✅ shipped | x64 GUI build in Releases; needs OpenGL or software rendering |
+| Windows 10/11 | ✅ shipped | x64 GUI build in Releases; external backend finds mpv/ffplay/vlc |
+| Linux ARM64 | ✅ shipped | static headless engine (musl); GUI on ARM64 on the roadmap |
+| Android | ⚠️ engine shipped | ARM64 headless binary in Releases (API 24+, runs in Termux); GUI APK planned |
 | macOS | ⚠️ untested | expected to work (winit + Slint); not validated yet |
 
-### Building for Android (experimental)
+### Building for Android
 
-The engine crates are `std`-only and compile for `aarch64-linux-android` out of the box.
-The UI crate targets Android through Slint's `android-activity` integration:
+The engine crates are `std`-only and compile for `aarch64-linux-android` out of
+the box; a prebuilt headless binary ships in every Release. Build it yourself
+with the NDK:
 
 ```bash
 rustup target add aarch64-linux-android
-cargo install cargo-apk   # or use xbuild
-# An android/ packaging skeleton is on the roadmap (see ARCHITECTURE.md §Roadmap).
+cargo install cargo-ndk
+cargo ndk --target arm64-v8a --platform 24 \
+    build --release -p spike-app --no-default-features
+# binary: target/aarch64-linux-android/release/spike
 ```
 
-Note: the external-player backend does not apply on Android (no arbitrary process
-spawning); an in-process GStreamer backend is the planned path there.
+On-device (Termux), the binary loads playlists, buffers live HLS and exposes
+the loopback re-serve URL to any local player. The GUI crate deliberately
+compiles without the windowing stack for this target
+(`--no-default-features`); an in-process player backend and a packaged APK are
+the planned path for full on-device UI (see `ARCHITECTURE.md §Roadmap`).
 
 ## Configuration
 
@@ -136,7 +163,8 @@ variant selection, and the loopback server's HTTP surface are all covered.
 - In-process video surface (GStreamer paintable embedded in the Slint scene)
 - DASH (`.mpd`) playback
 - EPG-driven "now playing" strip in the UI (parser is ready)
-- Android packaging skeleton + CI build
+- Android APK packaging with an in-process player backend (headless engine ships today)
+- ARM64 desktop GUI builds
 - Buffer watermark controls in the UI
 
 ## Contributing
