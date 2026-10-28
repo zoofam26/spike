@@ -41,7 +41,7 @@ jobs:
             archive: zip
 
           - label: android-arm64-headless
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             target: aarch64-linux-android
             archive: tar
             ndk: true

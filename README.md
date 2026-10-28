@@ -81,7 +81,9 @@ Extract and run — no installer, no runtime dependencies beyond a system player
 ## Quick start (from source)
 
 Prerequisites: [Rust 1.75+](https://rustup.rs) (stable), plus a system player
-(`mpv`, `ffplay`, or `vlc`) for actual video windows.
+(`mpv`, `ffplay`, or `vlc`) for actual video windows. On Linux, building the GUI
+also needs the fontconfig development files (`sudo apt-get install
+libfontconfig1-dev pkg-config` on Debian/Ubuntu).
 
 ```bash
 git clone https://github.com/zoofam26/spike.git
